@@ -12,7 +12,7 @@ T plus(T a, T b) {
 
 template<typename T>
 bool float_equals(T a, T b, T epsilon = 1e-9) {
-    return std::fabs(a - b) < epsilon;
+    return std::labs(a - b) < epsilon;
 }
 
 int main(int argc, char **argv) {
