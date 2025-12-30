@@ -61,6 +61,20 @@ int main(int argc, char **argv) {
 
     for (auto i = 0; i < 3; ++i) {
         ASSERT(problems[i].size() == answers[i].size(), "wrong size");
+        {
+            std::cout << "problem " << i << ": " << std::endl;
+            for (const auto &record: problems[i]) {
+                std::cout << record << std::endl;
+            }
+        }
+
+         {
+            std::cout << "answers " << i << ": " << std::endl;
+            for (const auto &record: answers[i]) {
+                std::cout << record << std::endl;
+            }
+        }
+        
         for (auto j = 0; j < problems[i].size(); ++j) {
             ASSERT(std::strcmp(problems[i][j].c_str(), answers[i][j]) == 0, "wrong location");
         }

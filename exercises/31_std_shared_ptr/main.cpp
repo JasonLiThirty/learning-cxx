@@ -26,16 +26,16 @@ int main(int argc, char **argv) {
     ptrs[2] = std::move(shared);
     ASSERT(observer.use_count() == 3, "");
 
-    std::ignore = std::move(ptrs[0]);
-    std::cout << "observer: " << observer.use_count() << std::endl;
+    std::ignore = std::move(ptrs[0]); //opt
+    //std::cout << "observer: " << observer.use_count() << std::endl;
     ptrs[1] = std::move(ptrs[1]);
-    std::cout << "observer: " << observer.use_count() << std::endl;
+    //std::cout << "observer: " << observer.use_count() << std::endl;
     ptrs[1] = std::move(ptrs[2]);
-    std::cout << "observer: " << observer.use_count() << std::endl;
-    ASSERT(observer.use_count() == 1, "");
+    //std::cout << "observer: " << observer.use_count() << std::endl;
+    ASSERT(observer.use_count() == 2, "");
 
     shared = observer.lock();
-    ASSERT(observer.use_count() == 2, "");
+    ASSERT(observer.use_count() == 3, "");
 
     shared = nullptr;
     for (auto &ptr : ptrs) ptr = nullptr;
