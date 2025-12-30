@@ -1,6 +1,8 @@
 ﻿#include "../exercise.h"
 #include <cstring>
 // READ: 类模板 <https://zh.cppreference.com/w/cpp/language/class_template>
+#include <stdexcept> 
+#include <string>
 
 template<class T>
 struct Tensor4D {
@@ -10,6 +12,10 @@ struct Tensor4D {
     Tensor4D(unsigned int const shape_[4], T const *data_) {
         unsigned int size = 1;
         // TODO: 填入正确的 shape 并计算 size
+        for (int i = 0; i < 4; ++i) {
+            shape[i] = shape_[i];
+            size *= shape[i];
+        }
         data = new T[size];
         std::memcpy(data, data_, size * sizeof(T));
     }
@@ -26,8 +32,54 @@ struct Tensor4D {
     // `others` 长度为 1 但 `this` 长度不为 1 的维度将发生广播计算。
     // 例如，`this` 形状为 `[1, 2, 3, 4]`，`others` 形状为 `[1, 2, 1, 4]`，
     // 则 `this` 与 `others` 相加时，3 个形状为 `[1, 2, 1, 4]` 的子张量各自与 `others` 对应项相加。
+    // Tensor4D &operator+=(Tensor4D const &others) {
+    //     // TODO: 实现单向广播的加法
+    //     return *this;
+    // }
+
+    inline unsigned int get_offset(unsigned int dim0, unsigned int dim1, 
+                                  unsigned int dim2, unsigned int dim3) const {
+        return dim0 * shape[1] * shape[2] * shape[3] +
+               dim1 * shape[2] * shape[3] +
+               dim2 * shape[3] +
+               dim3;
+    }
+
+    // 实现单向广播的加法
     Tensor4D &operator+=(Tensor4D const &others) {
-        // TODO: 实现单向广播的加法
+        // // 步骤1：校验广播合法性（others不同维度长度必须为1）
+        for (int i = 0; i < 4; ++i) {
+            if (others.shape[i] != 1 && others.shape[i] != shape[i]) {
+                throw std::invalid_argument("Invalid shape for broadcasting: dimension " 
+                    + std::to_string(i) + " mismatch");
+            }
+        }
+
+        // 步骤2：遍历this的所有元素，按广播规则相加
+        for (unsigned int d0 = 0; d0 < shape[0]; ++d0) {
+            // 广播维度：others该维度长度为1时，索引固定为0
+            unsigned int o0 = (others.shape[0] == 1) ? 0 : d0;
+            
+            for (unsigned int d1 = 0; d1 < shape[1]; ++d1) {
+                unsigned int o1 = (others.shape[1] == 1) ? 0 : d1;
+                
+                for (unsigned int d2 = 0; d2 < shape[2]; ++d2) {
+                    unsigned int o2 = (others.shape[2] == 1) ? 0 : d2;
+                    
+                    for (unsigned int d3 = 0; d3 < shape[3]; ++d3) {
+                        unsigned int o3 = (others.shape[3] == 1) ? 0 : d3;
+
+                        // 计算this和others的一维偏移量
+                        unsigned int self_idx = get_offset(d0, d1, d2, d3);
+                        unsigned int other_idx = others.get_offset(o0, o1, o2, o3);
+
+                        // 广播加法
+                        data[self_idx] += others.data[other_idx];
+                    }
+                }
+            }
+        }
+
         return *this;
     }
 };
