@@ -1,7 +1,6 @@
 ﻿#include "../exercise.h"
 #include <cstring>
 // READ: 类模板 <https://zh.cppreference.com/w/cpp/language/class_template>
-#include <stdexcept> 
 #include <string>
 
 template<class T>
@@ -27,61 +26,53 @@ struct Tensor4D {
     Tensor4D(Tensor4D const &) = delete;
     Tensor4D(Tensor4D &&) noexcept = delete;
 
+    unsigned int GetIndex(unsigned int index_0, unsigned int index_1, unsigned int index_2, unsigned int index_3) const
+    {
+        return index_0 * shape[1] * shape[2] * shape[3] +
+               index_1 * shape[2] * shape[3] +
+               index_2 * shape[3] +
+               index_3;
+    }
+
+
     // 这个加法需要支持“单向广播”。
     // 具体来说，`others` 可以具有与 `this` 不同的形状，形状不同的维度长度必须为 1。
     // `others` 长度为 1 但 `this` 长度不为 1 的维度将发生广播计算。
     // 例如，`this` 形状为 `[1, 2, 3, 4]`，`others` 形状为 `[1, 2, 1, 4]`，
     // 则 `this` 与 `others` 相加时，3 个形状为 `[1, 2, 1, 4]` 的子张量各自与 `others` 对应项相加。
-    // Tensor4D &operator+=(Tensor4D const &others) {
-    //     // TODO: 实现单向广播的加法
-    //     return *this;
-    // }
-
-    inline unsigned int get_offset(unsigned int dim0, unsigned int dim1, 
-                                  unsigned int dim2, unsigned int dim3) const {
-        return dim0 * shape[1] * shape[2] * shape[3] +
-               dim1 * shape[2] * shape[3] +
-               dim2 * shape[3] +
-               dim3;
-    }
-
-    // 实现单向广播的加法
-    Tensor4D &operator+=(Tensor4D const &others) {
-        // // 步骤1：校验广播合法性（others不同维度长度必须为1）
+   Tensor4D &operator+=(Tensor4D const &others) {
+        // TODO: 实现单向广播的加法
         for (int i = 0; i < 4; ++i) {
             if (others.shape[i] != 1 && others.shape[i] != shape[i]) {
-                throw std::invalid_argument("Invalid shape for broadcasting: dimension " 
-                    + std::to_string(i) + " mismatch");
+                ASSERT(false, "Invalid shape for broadcasting: dimension " + std::to_string(i) + " mismatch");
             }
         }
 
-        // 步骤2：遍历this的所有元素，按广播规则相加
-        for (unsigned int d0 = 0; d0 < shape[0]; ++d0) {
-            // 广播维度：others该维度长度为1时，索引固定为0
-            unsigned int o0 = (others.shape[0] == 1) ? 0 : d0;
-            
-            for (unsigned int d1 = 0; d1 < shape[1]; ++d1) {
-                unsigned int o1 = (others.shape[1] == 1) ? 0 : d1;
-                
-                for (unsigned int d2 = 0; d2 < shape[2]; ++d2) {
-                    unsigned int o2 = (others.shape[2] == 1) ? 0 : d2;
-                    
-                    for (unsigned int d3 = 0; d3 < shape[3]; ++d3) {
-                        unsigned int o3 = (others.shape[3] == 1) ? 0 : d3;
-
-                        // 计算this和others的一维偏移量
-                        unsigned int self_idx = get_offset(d0, d1, d2, d3);
-                        unsigned int other_idx = others.get_offset(o0, o1, o2, o3);
-
-                        // 广播加法
-                        data[self_idx] += others.data[other_idx];
+        for (unsigned int index0 = 0; index0 < shape[0]; ++index0) {
+            unsigned int other_index0 = (others.shape[0] == 1) ? 0 : index0;
+            for (unsigned int index1 = 0; index1 < shape[1]; ++index1) {
+                unsigned int other_index1 = (others.shape[1] == 1) ? 0 : index1;
+                for(unsigned int index2 = 0; index2 < shape[2]; ++index2) {
+                    unsigned int other_index2 = (others.shape[2] == 1) ? 0 : index2;
+                    for(unsigned int index3 = 0; index3 < shape[3]; ++index3) {
+                        unsigned int other_index3 = (others.shape[3] == 1) ? 0 : index3;
+                        
+                        unsigned int index = GetIndex(index0, index1, index2, index3);
+                        unsigned int other_index = others.GetIndex(other_index0, other_index1, other_index2, other_index3);
+                        //std::cout << index << "----" << other_index << std::endl;
+                        
+                        data[index] += others.data[other_index];
                     }
                 }
             }
         }
-
         return *this;
-    }
+   }
+
+    // Tensor4D &operator+=(Tensor4D const &others) {
+    //     // TODO: 实现单向广播的加法
+    //     return *this;
+    // }
 };
 
 // ---- 不要修改以下代码 ----
@@ -105,6 +96,7 @@ int main(int argc, char **argv) {
             ASSERT(t0.data[i] == data[i] * 2, "Tensor doubled by plus its self.");
         }
     }
+    std::cout << "---------------------------------" << std::endl;
     {
         unsigned int s0[]{1, 2, 3, 4};
         // clang-format off
@@ -133,9 +125,11 @@ int main(int argc, char **argv) {
         auto t1 = Tensor4D(s1, d1);
         t0 += t1;
         for (auto i = 0u; i < sizeof(d0) / sizeof(*d0); ++i) {
+           // std::cout << t0.data[i] <<std::endl;
             ASSERT(t0.data[i] == 7.f, "Every element of t0 should be 7 after adding t1 to it.");
         }
     }
+    std::cout << "---------------------------------" << std::endl;
     {
         unsigned int s0[]{1, 2, 3, 4};
         // clang-format off
